@@ -1,11 +1,7 @@
 const User = require("../models/User")
 const bcrypt = require("bcrypt")
 const validator = require("validator")
-const {
-  generateAccessToken,
-  generateRefreshToken,
-  generateSerializedToken
-} = require("../utils/token")
+const { generateAccessToken, generateRefreshToken } = require("../utils/token")
 
 exports.signUp = async (req, res) => {
   // Get request body
@@ -67,17 +63,20 @@ exports.signUp = async (req, res) => {
           updatedAt: new Date()
         })
 
-        const accessToken = generateAccessToken({ id: user.id })
-        const refreshToken = generateRefreshToken({ id: user.id })
-
-        res.setHeader("Access-Token", generateSerializedToken(accessToken))
-        res.setHeader("Refresh-Token", generateSerializedToken(refreshToken))
-
-        return res.status(200).json({
-          sucess: true,
-          message: "User created successfully",
+        const userInfo = {
           id: user.id,
-          newUser: true
+          email: user.email,
+          fullName: user.fullName
+        }
+        const accessToken = generateAccessToken(userInfo)
+        const refreshToken = generateRefreshToken(userInfo)
+
+        res.status(200).json({
+          success: true,
+          newUser: true,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          message: "Account created successfully"
         })
       } catch (error) {
         return res
@@ -122,23 +121,19 @@ exports.signIn = async (req, res) => {
   const passwordMatch = await bcrypt.compare(password, user.password)
 
   if (passwordMatch) {
-    const accessToken = generateAccessToken({ id: user.id })
-    const refreshToken = generateRefreshToken({ id: user.id })
+    const userInfo = {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName
+    }
+    const accessToken = generateAccessToken(userInfo)
+    const refreshToken = generateRefreshToken(userInfo)
 
-    // res.setHeader("Access-Token", generateSerializedToken(accessToken))
-    // res.setHeader("Refresh-Token", generateSerializedToken(refreshToken))
-
-    res.status(202).cookie("Access-Token", accessToken, {
-      httpOnly: true,
-      sameSite: "strict",
-      path: "/"
-      // secure: true
-    })
-
-    return res.status(200).json({
-      sucess: true,
-      message: "User signed in successfully",
-      id: user.id
+    res.status(200).json({
+      success: true,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      message: "User signed in successfully"
     })
   } else {
     return res.status(401).json({ error: true, message: "Incorrect password" })
@@ -163,4 +158,8 @@ exports.getUser = async (req, res) => {
       }
     })
   }
+}
+
+exports.getNote = async (_req, res) => {
+  res.status(200).json({ success: true, message: "Helllooooo, this is it!" })
 }
